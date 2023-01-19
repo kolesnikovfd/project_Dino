@@ -5,7 +5,7 @@ import random
 import pygame
 
 pygame.init()
-size = width, height = 600, 200
+size = width, height = 435, 200
 screen = pygame.display.set_mode(size)
 
 def load_image(name, colorkey=None):
@@ -37,6 +37,8 @@ class Dino(pygame.sprite.Sprite):
         self.cut_sheet(Dino.image_run, 2)
         self.cur_frame = 0
         self.image = self.frames[self.cur_frame]
+        self.is_jump = False
+        self.jump_count = 10
 
     def cut_sheet(self, sheet, count):
         self.frames = []
@@ -54,13 +56,25 @@ class Dino(pygame.sprite.Sprite):
         if pygame.sprite.spritecollideany(self, cacti):
             self.image = self.image_fail
 
-        for e in args:
+        if args:
+            e = args[0]
             if e.type == pygame.KEYDOWN and e.key == pygame.K_SPACE:
                 self.cut_sheet(self.image_jump, 1)
+                self.is_jump = True
             if e.type == pygame.KEYDOWN and e.key == pygame.K_DOWN:
                 self.cut_sheet(self.image_down, 2)
-            if e.type == pygame.KEYUP:
+            if e.type == pygame.KEYUP and not self.is_jump:
                 self.cut_sheet(self.image_run, 2)
+            if self.is_jump:
+                if self.jump_count >= -10:
+                    if self.jump_count < 0:
+                        self.rect.y += (self.jump_count ** 2) // 2
+                    else:
+                        self.rect.y -= (self.jump_count ** 2) // 2
+                    self.jump_count -= 1
+                else:
+                    self.is_jump = False
+                    self.jump_count = 10
 
 
 class Cactus(pygame.sprite.Sprite):
@@ -76,7 +90,7 @@ class Cactus(pygame.sprite.Sprite):
         self.rect.y = 110
 
     def update(self, *args):
-        self.rect = self.rect.move(-5, 0)
+        self.rect.x -= 5
 
 
 class Cloud(pygame.sprite.Sprite):
@@ -89,13 +103,50 @@ class Cloud(pygame.sprite.Sprite):
         self.image = Cloud.image
         self.rect = self.image.get_rect()
         self.rect.x = width
-        self.rect.y = random.randrange(30, 70)
+        self.rect.y = random.randrange(20, 80)
 
     def update(self, *args):
-        self.rect = self.rect.move(-2, 0)
+        self.rect.x -= 2
+
+
+def terminate():
+    pygame.quit()
+    sys.exit()
+
+def start_screen():
+    intro_text = ["DINO GAME", "",
+                  "Чтобы начать игру",
+                  "Нажмите любую кнопку"]
+
+    #fon = pygame.transform.scale(load_image('fon.jpg'), (WIDTH, HEIGHT))
+    #screen.blit(fon, (0, 0))
+    font = pygame.font.Font(None, 30)
+    text_coord = 50
+    for line in intro_text:
+        string_rendered = font.render(line, 1, (100, 100, 100))
+        intro_rect = string_rendered.get_rect()
+        text_coord += 10
+        intro_rect.top = text_coord
+        intro_rect.x = 10
+        text_coord += intro_rect.height
+        screen.blit(string_rendered, intro_rect)
+
+    while True:
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                terminate()
+            elif event.type == pygame.KEYDOWN or \
+                    event.type == pygame.MOUSEBUTTONDOWN:
+                return  # начинаем игру
+        pygame.display.flip()
+
+
+def restart_screen():
+    pass
 
 
 if __name__ == '__main__':
+    start_screen()
     dino = pygame.sprite.Group()
     cacti = pygame.sprite.Group()
     clouds = pygame.sprite.Group()
