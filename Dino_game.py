@@ -101,6 +101,40 @@ class Cactus(pygame.sprite.Sprite):
             running = False
 
 
+class Bird(pygame.sprite.Sprite):
+    image = load_image("Bird.png")
+
+    def __init__(self):
+        # НЕОБХОДИМО вызвать конструктор родительского класса Sprite.
+        # Это очень важно !!!
+        super().__init__(all_sprites)
+        self.cut_sheet(Bird.image, 2)
+        self.cur_frame = 0
+        self.image = self.frames[self.cur_frame]
+        self.mask = pygame.mask.from_surface(self.image)
+        self.rect = self.image.get_rect()
+        self.rect.x = width
+        self.rect.y = 110 #random height
+
+    def cut_sheet(self, sheet, count):
+        self.frames = []
+        self.rect = pygame.Rect(0, 0, sheet.get_width() // count, sheet.get_height())
+        self.rect.x = 20
+        self.rect.y = 160 - sheet.get_height()
+        for i in range(count):
+            frame_location = (self.rect.w * i, 0)
+            self.frames.append(sheet.subsurface(pygame.Rect(
+                frame_location, self.rect.size)))
+
+    def update(self, *args):
+        global running
+        self.cur_frame = (self.cur_frame + 1) % len(self.frames)
+        self.image = self.frames[self.cur_frame]
+        self.rect.x -= 5  # speed
+        if pygame.sprite.collide_mask(self, dino):
+            running = False
+
+
 class Cloud(pygame.sprite.Sprite):
     image = load_image("Cloud.png")
 
@@ -173,6 +207,7 @@ if __name__ == '__main__':
     all_sprites = pygame.sprite.Group()
     dino = Dino()
     Cloud()
+    Bird()
     score = 0
 
     # speed
