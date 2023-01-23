@@ -7,6 +7,12 @@ import pygame
 pygame.init()
 size = width, height = 600, 200
 screen = pygame.display.set_mode(size)
+font_path = 'data/Font.ttf'
+sound_jump = pygame.mixer.Sound("data/Sound_jump.wav")
+sound_score = pygame.mixer.Sound("data/Sound_score.wav")
+sound_fail = pygame.mixer.Sound("data/Sound_fail.wav")
+with open('data/high_score.txt', 'r') as f:
+    high_score = int(f.readline())
 
 
 def load_image(name, colorkey=None):
@@ -53,17 +59,19 @@ class Dino(pygame.sprite.Sprite):
                 frame_location, self.rect.size)))
 
     def update(self, *args):
-        global running
-        self.cur_frame = (self.cur_frame + 1) % len(self.frames)
-        self.image = self.frames[self.cur_frame]
+        if not self.is_jump:
+            self.cur_frame = (self.cur_frame + 1) % len(self.frames)
+            self.image = self.frames[self.cur_frame]
+
         # if pygame.sprite.spritecollideany(self, cacti):
         # self.image = self.image_fail
 
         if args:
             e = args[0]
             if e.type == pygame.KEYDOWN and e.key == pygame.K_SPACE and not self.is_jump:
-                self.cut_sheet(self.image_jump, 1)
+                self.image = self.image_jump
                 self.is_jump = True
+                sound_jump.play()
             if e.type == pygame.KEYDOWN and e.key == pygame.K_DOWN:
                 self.cut_sheet(self.image_down, 2)
             if e.type == pygame.KEYUP and not self.is_jump:
@@ -82,22 +90,23 @@ class Dino(pygame.sprite.Sprite):
 
 
 class Cactus(pygame.sprite.Sprite):
-    image = load_image("Cactus.png")
+    images = [load_image(f"Cactus{i}.png") for i in range(1, 7)]
 
     def __init__(self):
         # НЕОБХОДИМО вызвать конструктор родительского класса Sprite.
         # Это очень важно !!!
         super().__init__(all_sprites)
-        self.image = Cactus.image
+        self.image = Cactus.images[random.randrange(6)]
         self.mask = pygame.mask.from_surface(self.image)
         self.rect = self.image.get_rect()
         self.rect.x = width
-        self.rect.y = 110
+        self.rect.y = 160 - self.image.get_height()
 
     def update(self, *args):
         global running
         self.rect.x -= 10  # speed
         if pygame.sprite.collide_mask(self, dino):
+            sound_fail.play()
             running = False
 
 
@@ -132,6 +141,7 @@ class Bird(pygame.sprite.Sprite):
         self.image = self.frames[self.cur_frame]
         self.rect.x -= 5  # speed
         if pygame.sprite.collide_mask(self, dino):
+            sound_fail.play()
             running = False
 
 
@@ -152,6 +162,8 @@ class Cloud(pygame.sprite.Sprite):
 
 
 def terminate():
+    with open('data/high_score.txt', 'w') as f:
+        f.write(str(high_score))
     pygame.quit()
     sys.exit()
 
@@ -164,10 +176,10 @@ def start_screen():
     screen.fill((255, 255, 255))
     fon = pygame.transform.scale(load_image('fon.png'), (width - 200, height))
     screen.blit(fon, (200, 0))
-    font = pygame.font.Font(None, 30)
+    font = pygame.font.Font(font_path, 20)
     text_coord = 50
     for line in intro_text:
-        string_rendered = font.render(line, True, (100, 100, 100))
+        string_rendered = font.render(line, False, (100, 100, 100))
         intro_rect = string_rendered.get_rect()
         text_coord += 10
         intro_rect.top = text_coord
@@ -186,8 +198,8 @@ def start_screen():
 
 
 def restart_screen():
-    font = pygame.font.Font(None, 30)
-    text = font.render('Начать заново?', True, (100, 100, 100))
+    font = pygame.font.Font(font_path, 30)
+    text = font.render('Начать заново?', False, (100, 100, 100))
     text_x = width // 2 - text.get_width() // 2
     text_y = height // 2 - text.get_height() // 2
     screen.blit(text, (text_x, text_y))
@@ -207,14 +219,13 @@ if __name__ == '__main__':
     all_sprites = pygame.sprite.Group()
     dino = Dino()
     Cloud()
-    Bird()
     score = 0
 
     # speed
     fps = 30
     clock = pygame.time.Clock()
-    pygame.time.set_timer(pygame.USEREVENT, 1000)
-    pygame.time.set_timer(pygame.USEREVENT + 1, 3000)
+    pygame.time.set_timer(pygame.USEREVENT, 500)
+    pygame.time.set_timer(pygame.USEREVENT + 1, 6000)
 
     screen.fill((255, 255, 255))
     pygame.draw.line(screen, (100, 100, 100), (0, 150), (width, 150), 2)
@@ -227,7 +238,13 @@ if __name__ == '__main__':
                 all_sprites.update(event)
             if event.type == pygame.USEREVENT:
                 # for _ in range(random.randrange(1, 3)):
-                Cactus()
+                if score % 1000 > 750:
+                    if random.randint(0, 1):
+                        Bird()
+                    else:
+                        Cactus()
+                else:
+                    Cactus()
                 pygame.time.set_timer(pygame.USEREVENT, random.randrange(1000, 3000))  # speed
             if event.type == pygame.USEREVENT + 1:
                 Cloud()
@@ -238,15 +255,18 @@ if __name__ == '__main__':
         all_sprites.update()
 
         score += 1  # speed
-        font = pygame.font.Font(None, 20)
-        text = font.render(f'HI 00000 {score}', True, (100, 100, 100))
-        text_x = width - width // 3
-        text_y = height // 10
+        font = pygame.font.Font(font_path, 15)
+        text = font.render(f'HI {high_score:>5} {score:>5}', False, (100, 100, 100))
+        text_x = width - width // 4
+        text_y = height // 20
         screen.blit(text, (text_x, text_y))
+        if score % 1000 == 0:
+            sound_score.play()
 
         clock.tick(fps)  # speed
         pygame.display.flip()
 
         if not running:
             running = restart_screen()
+            high_score = score
             score = 0
