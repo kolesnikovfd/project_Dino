@@ -214,6 +214,10 @@ def restart_screen():
         pygame.display.flip()
 
 
+def level():
+    pass
+
+
 if __name__ == '__main__':
     start_screen()
     all_sprites = pygame.sprite.Group()
@@ -268,5 +272,8 @@ if __name__ == '__main__':
 
         if not running:
             running = restart_screen()
-            high_score = score
+            if high_score < score: high_score = score
             score = 0
+            all_sprites = pygame.sprite.Group()
+            dino = Dino()
+            Cloud()
