@@ -4,6 +4,7 @@ import random
 
 import pygame
 
+all_sprites = pygame.sprite.Group()
 pygame.init()
 size = width, height = 600, 200
 screen = pygame.display.set_mode(size)
@@ -123,7 +124,7 @@ class Bird(pygame.sprite.Sprite):
         self.mask = pygame.mask.from_surface(self.image)
         self.rect = self.image.get_rect()
         self.rect.x = width
-        self.rect.y = 110 #random height
+        self.rect.y = 110  # random height
 
     def cut_sheet(self, sheet, count):
         self.frames = []
@@ -139,7 +140,7 @@ class Bird(pygame.sprite.Sprite):
         global running
         self.cur_frame = (self.cur_frame + 1) % len(self.frames)
         self.image = self.frames[self.cur_frame]
-        self.rect.x -= 5  # speed
+        self.rect.x -= 10  # speed
         if pygame.sprite.collide_mask(self, dino):
             sound_fail.play()
             running = False
@@ -215,11 +216,7 @@ def restart_screen():
 
 
 def level():
-    pass
-
-
-if __name__ == '__main__':
-    start_screen()
+    global dino, all_sprites, running, high_score
     all_sprites = pygame.sprite.Group()
     dino = Dino()
     Cloud()
@@ -271,9 +268,11 @@ if __name__ == '__main__':
         pygame.display.flip()
 
         if not running:
-            running = restart_screen()
             if high_score < score: high_score = score
-            score = 0
-            all_sprites = pygame.sprite.Group()
-            dino = Dino()
-            Cloud()
+            if restart_screen():
+                level()
+
+
+if __name__ == '__main__':
+    start_screen()
+    level()
