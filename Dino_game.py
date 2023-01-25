@@ -12,6 +12,10 @@ font_path = 'data/Font.ttf'
 sound_jump = pygame.mixer.Sound("data/Sound_jump.wav")
 sound_score = pygame.mixer.Sound("data/Sound_score.wav")
 sound_fail = pygame.mixer.Sound("data/Sound_fail.wav")
+pygame.mixer.music.load('data/PHONK.wav')
+pygame.mixer.music.play(-1)
+pygame.mixer.music.pause()
+music_paused = True
 with open('data/high_score.txt', 'r') as f:
     high_score = int(f.readline())
 
@@ -63,26 +67,28 @@ class Dino(pygame.sprite.Sprite):
         if not self.is_jump:
             self.cur_frame = (self.cur_frame + 1) % len(self.frames)
             self.image = self.frames[self.cur_frame]
+            self.mask = pygame.mask.from_surface(self.image)
 
-        # if pygame.sprite.spritecollideany(self, cacti):
-        # self.image = self.image_fail
+            # if pygame.sprite.spritecollideany(self, cacti):
+            # self.image = self.image_fail
 
-        if args:
-            e = args[0]
-            if e.type == pygame.KEYDOWN and e.key == pygame.K_SPACE and not self.is_jump:
-                self.image = self.image_jump
-                self.is_jump = True
-                sound_jump.play()
-            if e.type == pygame.KEYDOWN and e.key == pygame.K_DOWN:
-                self.cut_sheet(self.image_down, 2)
-            if e.type == pygame.KEYUP and not self.is_jump:
-                self.cut_sheet(self.image_run, 2)
+            if args:
+                e = args[0]
+                if e.type == pygame.KEYDOWN and e.key == pygame.K_SPACE and not self.is_jump:
+                    self.image = self.image_jump
+                    self.is_jump = True
+                if e.type == pygame.KEYDOWN and e.key == pygame.K_DOWN:
+                    self.cut_sheet(self.image_down, 2)
+                if e.type == pygame.KEYUP and not self.is_jump:
+                    self.cut_sheet(self.image_run, 2)
         if self.is_jump:  # speed
+            if self.jump_count == 10:
+                sound_jump.play()
             if self.jump_count >= -10:
                 if self.jump_count < 0:
-                    self.rect.y += (self.jump_count ** 2) // 5
+                    self.rect.y += (self.jump_count ** 2) // 4
                 else:
-                    self.rect.y -= (self.jump_count ** 2) // 5
+                    self.rect.y -= (self.jump_count ** 2) // 4
                 self.jump_count -= 1
             else:
                 self.jump_count = 10
@@ -109,6 +115,7 @@ class Cactus(pygame.sprite.Sprite):
         if pygame.sprite.collide_mask(self, dino):
             sound_fail.play()
             running = False
+            dino.image = dino.image_fail
 
 
 class Bird(pygame.sprite.Sprite):
@@ -121,10 +128,9 @@ class Bird(pygame.sprite.Sprite):
         self.cut_sheet(Bird.image, 2)
         self.cur_frame = 0
         self.image = self.frames[self.cur_frame]
-        self.mask = pygame.mask.from_surface(self.image)
         self.rect = self.image.get_rect()
         self.rect.x = width
-        self.rect.y = 110  # random height
+        self.rect.y = random.choice([75, 95, 115])  # random height
 
     def cut_sheet(self, sheet, count):
         self.frames = []
@@ -140,10 +146,12 @@ class Bird(pygame.sprite.Sprite):
         global running
         self.cur_frame = (self.cur_frame + 1) % len(self.frames)
         self.image = self.frames[self.cur_frame]
+        self.mask = pygame.mask.from_surface(self.image)
         self.rect.x -= 10  # speed
         if pygame.sprite.collide_mask(self, dino):
             sound_fail.play()
             running = False
+            dino.image = dino.image_fail
 
 
 class Cloud(pygame.sprite.Sprite):
@@ -156,7 +164,7 @@ class Cloud(pygame.sprite.Sprite):
         self.image = Cloud.image
         self.rect = self.image.get_rect()
         self.rect.x = width
-        self.rect.y = random.randrange(20, 80)
+        self.rect.y = random.randrange(30, 80)
 
     def update(self, *args):
         self.rect.x -= 1  # speed
@@ -216,52 +224,58 @@ def restart_screen():
 
 
 def level():
-    global dino, all_sprites, running, high_score
+    global dino, all_sprites, running, high_score, music_paused
     all_sprites = pygame.sprite.Group()
     dino = Dino()
     Cloud()
     score = 0
 
     # speed
-    fps = 30
+    fps = 60
     clock = pygame.time.Clock()
     pygame.time.set_timer(pygame.USEREVENT, 500)
     pygame.time.set_timer(pygame.USEREVENT + 1, 6000)
 
     screen.fill((255, 255, 255))
-    pygame.draw.line(screen, (100, 100, 100), (0, 150), (width, 150), 2)
+    pygame.draw.line(screen, (100, 100, 100), (0, 153), (width, 153), 1)
     running = True
     while running:
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 terminate()
+            if event.type == pygame.KEYDOWN and event.key == pygame.K_f:
+                music_paused = not music_paused
+                if music_paused:
+                    pygame.mixer.music.pause()
+                else:
+                    pygame.mixer.music.unpause()
             if event.type == pygame.KEYDOWN or event.type == pygame.KEYUP:
                 all_sprites.update(event)
             if event.type == pygame.USEREVENT:
-                # for _ in range(random.randrange(1, 3)):
-                if score % 1000 > 750:
+                if score % 1000 > 500:
                     if random.randint(0, 1):
                         Bird()
                     else:
                         Cactus()
                 else:
                     Cactus()
-                pygame.time.set_timer(pygame.USEREVENT, random.randrange(1000, 3000))  # speed
+                pygame.time.set_timer(pygame.USEREVENT, random.randrange(500, 1250))  # speed
             if event.type == pygame.USEREVENT + 1:
                 Cloud()
+                pygame.time.set_timer(pygame.USEREVENT + 1, random.randrange(2000, 5000))
 
         screen.fill((255, 255, 255))
-        pygame.draw.line(screen, (100, 100, 100), (0, 150), (width, 150), 1)
-        all_sprites.draw(screen)
+        pygame.draw.line(screen, (100, 100, 100), (0, 153), (width, 153), 1)
         all_sprites.update()
+        all_sprites.draw(screen)
 
         score += 1  # speed
         font = pygame.font.Font(font_path, 15)
-        text = font.render(f'HI {high_score:>5} {score:>5}', False, (100, 100, 100))
+        text = font.render(f'HI {high_score:06} {score:06}', False, (100, 100, 100))
         text_x = width - width // 4
         text_y = height // 20
         screen.blit(text, (text_x, text_y))
-        if score % 1000 == 0:
+        if score % 500 == 0:
             sound_score.play()
 
         clock.tick(fps)  # speed
