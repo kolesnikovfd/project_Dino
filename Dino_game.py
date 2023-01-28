@@ -4,10 +4,11 @@ import random
 
 import pygame
 
-all_sprites = pygame.sprite.Group()
 pygame.init()
 size = width, height = 600, 200
 screen = pygame.display.set_mode(size)
+pygame.display.set_caption('DINO')
+all_sprites = pygame.sprite.Group()
 font_path = 'data/Font.ttf'
 sound_jump = pygame.mixer.Sound("data/Sound_jump.wav")
 sound_score = pygame.mixer.Sound("data/Sound_score.wav")
@@ -237,7 +238,8 @@ def level():
     pygame.time.set_timer(pygame.USEREVENT + 1, 6000)
 
     screen.fill((255, 255, 255))
-    pygame.draw.line(screen, (100, 100, 100), (0, 153), (width, 153), 1)
+    # pygame.draw.line(screen, (100, 100, 100), (0, 153), (width, 153), 1)
+    sand = [(random.randrange(width), random.randrange(157, 162)) for _ in range(20)]
     running = True
     while running:
         for event in pygame.event.get():
@@ -266,6 +268,9 @@ def level():
 
         screen.fill((255, 255, 255))
         pygame.draw.line(screen, (100, 100, 100), (0, 153), (width, 153), 1)
+        for i, pos in enumerate(sand):
+            pygame.draw.line(screen, (100, 100, 100), pos, (pos[0] + 2, pos[1]), 1)
+            sand[i] = ((pos[0] - 10) % width, pos[1])
         all_sprites.update()
         all_sprites.draw(screen)
 
