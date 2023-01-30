@@ -44,8 +44,6 @@ class Dino(pygame.sprite.Sprite):
     image_fail = load_image("Dino_F.png")
 
     def __init__(self):
-        # НЕОБХОДИМО вызвать конструктор родительского класса Sprite.
-        # Это очень важно !!!
         super().__init__(all_sprites)
         self.cut_sheet(Dino.image_run, 2)
         self.cur_frame = 0
@@ -69,10 +67,6 @@ class Dino(pygame.sprite.Sprite):
             self.cur_frame = (self.cur_frame + 1) % len(self.frames)
             self.image = self.frames[self.cur_frame]
             self.mask = pygame.mask.from_surface(self.image)
-
-            # if pygame.sprite.spritecollideany(self, cacti):
-            # self.image = self.image_fail
-
             if args:
                 e = args[0]
                 if e.type == pygame.KEYDOWN and e.key == pygame.K_SPACE and not self.is_jump:
@@ -101,8 +95,6 @@ class Cactus(pygame.sprite.Sprite):
     images = [load_image(f"Cactus{i}.png") for i in range(1, 7)]
 
     def __init__(self):
-        # НЕОБХОДИМО вызвать конструктор родительского класса Sprite.
-        # Это очень важно !!!
         super().__init__(all_sprites)
         self.image = Cactus.images[random.randrange(6)]
         self.mask = pygame.mask.from_surface(self.image)
@@ -114,7 +106,6 @@ class Cactus(pygame.sprite.Sprite):
         global running
         self.rect.x -= 10  # speed
         if pygame.sprite.collide_mask(self, dino):
-            sound_fail.play()
             running = False
             dino.image = dino.image_fail
 
@@ -123,8 +114,6 @@ class Bird(pygame.sprite.Sprite):
     image = load_image("Bird.png")
 
     def __init__(self):
-        # НЕОБХОДИМО вызвать конструктор родительского класса Sprite.
-        # Это очень важно !!!
         super().__init__(all_sprites)
         self.cut_sheet(Bird.image, 2)
         self.cur_frame = 0
@@ -135,9 +124,8 @@ class Bird(pygame.sprite.Sprite):
 
     def cut_sheet(self, sheet, count):
         self.frames = []
-        self.rect = pygame.Rect(0, 0, sheet.get_width() // count, sheet.get_height())
-        self.rect.x = 20
-        self.rect.y = 160 - sheet.get_height()
+        self.rect = pygame.Rect(0, 0, sheet.get_width() //
+                                count, sheet.get_height())
         for i in range(count):
             frame_location = (self.rect.w * i, 0)
             self.frames.append(sheet.subsurface(pygame.Rect(
@@ -150,7 +138,6 @@ class Bird(pygame.sprite.Sprite):
         self.mask = pygame.mask.from_surface(self.image)
         self.rect.x -= 10  # speed
         if pygame.sprite.collide_mask(self, dino):
-            sound_fail.play()
             running = False
             dino.image = dino.image_fail
 
@@ -159,8 +146,6 @@ class Cloud(pygame.sprite.Sprite):
     image = load_image("Cloud.png")
 
     def __init__(self):
-        # НЕОБХОДИМО вызвать конструктор родительского класса Sprite.
-        # Это очень важно !!!
         super().__init__(all_sprites)
         self.image = Cloud.image
         self.rect = self.image.get_rect()
@@ -238,7 +223,7 @@ def level():
     pygame.time.set_timer(pygame.USEREVENT + 1, 6000)
 
     screen.fill((255, 255, 255))
-    # pygame.draw.line(screen, (100, 100, 100), (0, 153), (width, 153), 1)
+    pygame.draw.line(screen, (100, 100, 100), (0, 153), (width, 153), 1)
     sand = [(random.randrange(width), random.randrange(157, 162)) for _ in range(20)]
     running = True
     while running:
@@ -251,7 +236,8 @@ def level():
                     pygame.mixer.music.pause()
                 else:
                     pygame.mixer.music.unpause()
-            if event.type == pygame.KEYDOWN or event.type == pygame.KEYUP:
+            if event.type == pygame.KEYDOWN or \
+                    event.type == pygame.KEYUP:
                 all_sprites.update(event)
             if event.type == pygame.USEREVENT:
                 if score % 1000 > 500:
@@ -261,7 +247,8 @@ def level():
                         Cactus()
                 else:
                     Cactus()
-                pygame.time.set_timer(pygame.USEREVENT, random.randrange(500, 1250))  # speed
+                pygame.time.set_timer(
+                    pygame.USEREVENT, random.randrange(500, 1250))  # speed
             if event.type == pygame.USEREVENT + 1:
                 Cloud()
                 pygame.time.set_timer(pygame.USEREVENT + 1, random.randrange(2000, 5000))
@@ -287,7 +274,9 @@ def level():
         pygame.display.flip()
 
         if not running:
-            if high_score < score: high_score = score
+            sound_fail.play()
+            if high_score < score:
+                high_score = score
             if restart_screen():
                 level()
 
